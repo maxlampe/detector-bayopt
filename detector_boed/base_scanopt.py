@@ -8,6 +8,7 @@ import pickle
 import matplotlib.pyplot as plt
 from panter.map.scan2DMap import ScanMapClass
 
+plt.rcParams.update({'font.size': 12})
 warnings.filterwarnings("ignore")
 
 
@@ -91,6 +92,38 @@ class BaseScanOpt:
         plt.show()
 
         plt.savefig(f"{self._opt_label}_losscurve", dpi=300)
+
+    def plot_history_order(self):
+        """WIP"""
+
+        data = self.weight_hist
+        colour = self.loss_hist
+
+        fig, axs = plt.subplots(1, 1, figsize=(8, 8))
+        fig.suptitle("Optimization History", fontsize=22)
+
+        plt.plot(data.T[0], data.T[1], zorder=2, c="#cb4679", alpha=0.4)
+        plt.scatter(data.T[0], data.T[1], c=colour, cmap="plasma", marker='o', s=200., zorder=1)
+        for i, txt in enumerate(data):
+            if i < 9:
+                txt = f"0{i + 1}"
+            else:
+                txt = f"{i + 1}"
+            axs.annotate(
+                txt,
+                (data.T[0, i], data.T[1, i]),
+                c="white",
+                bbox={'facecolor': 'black', 'alpha': 0.7, 'pad': 1.5},
+            )
+        axs.set_xlim([0.9, 1.1])
+        axs.set_ylim([0.9, 1.1])
+        axs.set_xlabel("w1 [ ]")
+        axs.set_ylabel("w2 [ ]")
+        # axs.set_facecolor('#0c0887')
+        cbar = plt.colorbar()
+        cbar.set_label("Symmetry Loss")
+        # plt.savefig("opt_step_hist.png", dpi=300)
+        plt.show()
 
     def save_history(self, file_name: str = None):
         """"""
