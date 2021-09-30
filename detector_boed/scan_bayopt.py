@@ -11,7 +11,7 @@ import torch.autograd as autograd
 import torch.optim as optim
 from torch.distributions import constraints, transform_to
 from panter.map.scan2DMap import ScanMapClass
-from panter.config.filesScanMaps import scan_200117
+from panter.config.filesScanMaps import scan_200117, scan_200118
 
 from base_scanopt import BaseScanOpt
 
@@ -29,6 +29,7 @@ class ScanBayOpt(BaseScanOpt):
         weight_dim: int = 4,
         weight_range: np.array = np.array([0.9, 1.1]),
         detector: int = 0,
+        bdummy_values: bool = False,
     ):
         super().__init__(
             scan_map_class=scan_map_class,
@@ -36,6 +37,7 @@ class ScanBayOpt(BaseScanOpt):
             weight_range=weight_range,
             detector=detector,
             opt_label="BayOpt",
+            bdummy_values=bdummy_values,
         )
 
         self._gp_model = None
@@ -158,30 +160,37 @@ class ScanBayOpt(BaseScanOpt):
 
         return x, y
 
+    def _acqu_decorator(aqu_func):
+        def prep(*args, **kwargs):
+            gpm = args[0]
+            x = args[1]
+            mu, variance = gpm(x, full_cov=False, noiseless=False)
+            sigma = variance.sqrt()
+            argmin = torch.min(gpm.y, dim=0)[1].item()
+            mu_min = gpm.y[argmin]
+            return aqu_func(*args, **kwargs, mu=mu, sigma=sigma, mu_min=mu_min)
+
+        return prep
+
     @staticmethod
-    def _lower_confidence_bound(gp_model, x_in, kappa=3.0):
-        mu, variance = gp_model(x_in, full_cov=False, noiseless=False)
-        sigma = variance.sqrt()
+    @_acqu_decorator
+    def _lower_confidence_bound(gp_model, x_in, mu, sigma, mu_min=None, kappa=3.0):
+        """"""
         return mu - kappa * sigma
 
     @staticmethod
-    def _prob_of_improvement(gp_model, x_in, kappa):
-        mu, variance = gp_model(x_in, full_cov=False, noiseless=False)
-        sigma = variance.sqrt()
-        argmin = torch.min(gp_model.y, dim=0)[1].item()
-        mu_min = gp_model.y[argmin]
+    @_acqu_decorator
+    def _prob_of_improvement(gp_model, x_in, mu, sigma, mu_min, kappa):
+        """"""
         n_dist = torch.distributions.normal.Normal(loc=0.0, scale=1.0)
         return n_dist.cdf((mu - mu_min - kappa) / sigma)
 
     @staticmethod
-    def _expected_improvement(gp_model, x_in, kappa=1.0):
+    @_acqu_decorator
+    def _expected_improvement(gp_model, x_in, mu, sigma, mu_min, kappa=1.0):
         """"""
-        mu, variance = gp_model(x_in, full_cov=False, noiseless=False)
-        sigma = variance.sqrt()
-        argmin = torch.min(gp_model.y, dim=0)[1].item()
-        mu_min = gp_model.y[argmin]
-        n_dist = torch.distributions.normal.Normal(loc=0.0, scale=1.0)
 
+        n_dist = torch.distributions.normal.Normal(loc=0.0, scale=1.0)
         # gamma = (mu - mu_min - kappa) / sigma
         gamma = (mu_min - mu + kappa) / sigma
         return -(
@@ -199,13 +208,17 @@ def main():
         detector=0,
     )
 
-    sbo = ScanBayOpt(scan_map_class=smc, weight_dim=8, detector=smc.detector)
+    DIM = 8
+    sbo = ScanBayOpt(
+        scan_map_class=smc, weight_dim=DIM, detector=smc.detector, bdummy_values=False
+    )
     result = sbo.optimize(
-        n_start_data=(2*8),
-        n_opt_steps=(500 - 2*8),
+        n_start_data=(2 * DIM),
+        n_opt_steps=(120 - 2 * DIM),
         n_candidates=50,
     )
-    sbo.plot_history()
+    sbo.plot_history(bsave_fig=True)
+    # sbo.plot_history_order(bsave_fig=False)
     sbo.save_history()
 
     print("Best optimization result: ", result)
