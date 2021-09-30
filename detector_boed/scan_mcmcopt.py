@@ -20,6 +20,7 @@ class ScanMCMCOpt(BaseScanOpt):
         weight_dim: int = 4,
         weight_range: np.array = np.array([0.9, 1.1]),
         detector: int = 0,
+        bdummy_values: bool = False,
     ):
         super().__init__(
             scan_map_class=scan_map_class,
@@ -27,6 +28,7 @@ class ScanMCMCOpt(BaseScanOpt):
             weight_range=weight_range,
             detector=detector,
             opt_label="MCMCOpt",
+            bdummy_values=bdummy_values,
         )
 
     def optimize(self, n_opt_steps: int = 80):
@@ -38,6 +40,7 @@ class ScanMCMCOpt(BaseScanOpt):
             bounds=w_rng,
             maxiter=n_opt_steps,
             maxfun=n_opt_steps,
+            no_local_search=True,
         )
         print(res)
 
@@ -58,10 +61,12 @@ def main():
         detector=0,
     )
 
-    smcmc = ScanMCMCOpt(scan_map_class=smc, weight_dim=8, detector=smc.detector)
-    result = smcmc.optimize(n_opt_steps=500)
+    smcmc = ScanMCMCOpt(scan_map_class=smc, weight_dim=2, detector=smc.detector)
+    result = smcmc.optimize(n_opt_steps=50)
     smcmc.plot_history()
-    smcmc.save_history()
+    smcmc.plot_history(bsave_fig=False)
+    smcmc.plot_history_order(bsave_fig=True)
+    # smcmc.save_history(file_name="mcmc_free.plk")
 
     print("Best optimization result: ", result)
     best_weights = smcmc.construct_weights(result["x_opt"], smc.detector)

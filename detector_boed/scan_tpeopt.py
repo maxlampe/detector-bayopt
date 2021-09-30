@@ -20,6 +20,7 @@ class ScanTPEOpt(BaseScanOpt):
         weight_dim: int = 4,
         weight_range: np.array = np.array([0.9, 1.1]),
         detector: int = 0,
+        bdummy_values: bool = False,
     ):
         super().__init__(
             scan_map_class=scan_map_class,
@@ -27,6 +28,7 @@ class ScanTPEOpt(BaseScanOpt):
             weight_range=weight_range,
             detector=detector,
             opt_label="TPEOpt",
+            bdummy_values=bdummy_values,
         )
 
         self._optuna_study = None
@@ -68,10 +70,11 @@ def main():
         detector=0,
     )
 
-    stpe = ScanTPEOpt(scan_map_class=smc, weight_dim=8, detector=smc.detector)
-    result = stpe.optimize(n_opt_steps=500)
-    stpe.plot_history()
-    stpe.save_history()
+    stpe = ScanTPEOpt(scan_map_class=smc, weight_dim=2, detector=smc.detector)
+    result = stpe.optimize(n_opt_steps=50)
+    stpe.plot_history(bsave_fig=False)
+    stpe.plot_history_order(bsave_fig=True)
+    # stpe.save_history()
 
     print("Best optimization result: ", result)
     best_weights = stpe.construct_weights(result["x_opt"], smc.detector)
