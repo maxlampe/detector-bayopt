@@ -52,11 +52,11 @@ def main():
     )
 
     srndm = ScanRandomOpt(
-        scan_map_class=smc, weight_dim=2, detector=smc.detector, bdummy_values=False
+        scan_map_class=smc, weight_dim=4, detector=smc.detector, bdummy_values=False
     )
-    result = srndm.optimize(n_opt_steps=50)
-    srndm.plot_history(bsave_fig=False)
-    srndm.plot_history_order(bsave_fig=True)
+    result = srndm.optimize(n_opt_steps=75)
+    # srndm.plot_history(bsave_fig=False)
+    # srndm.plot_history_order(bsave_fig=True)
     # srndm.save_history()
 
     print("Best optimization result: ", result)

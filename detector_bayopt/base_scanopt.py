@@ -112,13 +112,13 @@ class BaseScanOpt:
 
         plt.figure(figsize=(8, 8))
         plt.plot(opt_curve, label="Best value", c=CLRS["blue"], linewidth=2.0)
-        plt.plot(loss_plot.T[0], "-x", label="Uniformity", c=CLRS["orange"], alpha=0.2)
+        plt.plot(loss_plot.T[0], "-x", label="Uniformity", c=CLRS["orange"], alpha=0.5)
         plt.plot(
             loss_plot.T[1],
             "-o",
             label="Uniformity + Symm.-Loss",
             c=CLRS["red"],
-            alpha=0.2,
+            alpha=0.5,
         )
         plt.plot(
             [24e3] * loss_plot.T[0].shape[0],
@@ -127,7 +127,7 @@ class BaseScanOpt:
             c=CLRS["magenta"],
             linewidth=2.0,
         )
-        plt.title(f"{self._opt_label} - Loss curve", fontsize=22)
+        # plt.title(f"{self._opt_label} - Loss curve", fontsize=22)
         plt.xlabel("Function calls [ ]")
         plt.ylabel("Loss [ ]")
         plt.ylim([5000.0, 50e3])
