@@ -47,19 +47,29 @@ class ScanBayOpt(BaseScanOpt):
         n_start_data: int = 50,
         n_opt_steps: int = 80,
         n_candidates: int = 50,
+        start_x: torch.tensor = None,
+        start_y: torch.tensor = None,
     ):
         """"""
 
         pyro.clear_param_store()
-        x_init_, y_init = self._init_w_rndm_data(n_start_data)
+        x_init, y_init = self._init_w_rndm_data(n_start_data)
+        # x_imp = torch.load("gpr_xdata.pt")
+        # y_imp = torch.load("gpr_ydata.pt")
+        #
+        # x_init = torch.cat([x_init, x_imp])
+        # y_init = torch.cat([y_init, y_imp])
 
         self._gp_model = gp.models.GPRegression(
-            x_init_,
+            x_init,
             y_init,
             gp.kernels.Matern52(input_dim=self._w_dim),
             noise=torch.tensor(0.1),
             jitter=1.0e-4,
         )
+
+        if start_x is not None and start_y is not None:
+            self.add_data(start_x, start_y)
 
         self._update_posterior()
         for i in range(n_opt_steps):
@@ -72,18 +82,37 @@ class ScanBayOpt(BaseScanOpt):
     def _update_posterior(self, x_new: torch.tensor = None):
         """"""
 
-        if x_new is not None:
-            losses = self.calc_losses(torch.flatten(x_new))
+        try:
+            if x_new is not None:
+                losses = self.calc_losses(torch.flatten(x_new))
 
-            if losses[1] is not None:
-                y = torch.tensor([losses[1]])
-                x = torch.cat([self._gp_model.X, x_new])
-                y = torch.cat([self._gp_model.y, y])
-                self._gp_model.set_data(x, y)
+                if losses[1] is not None:
+                    y = torch.tensor([losses[1]])
+                    x = torch.cat([self._gp_model.X, x_new])
+                    y = torch.cat([self._gp_model.y, y])
+                    self._gp_model.set_data(x, y)
 
-        if x_new is None or losses[1] is not None:
-            optimizer = torch.optim.Adam(self._gp_model.parameters(), lr=0.001)
-            gp.util.train(self._gp_model, optimizer)
+                    # print("Storing data")
+                    # torch.save(x, "gpr_xdata.pt")
+                    # torch.save(y, "gpr_ydata.pt")
+
+            if x_new is None or losses[1] is not None:
+                # try RuntimeError
+                optimizer = torch.optim.Adam(self._gp_model.parameters(), lr=0.001)
+                gp.util.train(self._gp_model, optimizer)
+        except RuntimeError:
+            print("Cholesky Error. Re-instantiating GP")
+            # rand_ind = torch.randint(0, self._gp_model.X.shape[0])
+            x = self._gp_model.X
+            y = self._gp_model.y
+            self._gp_model = gp.models.GPRegression(
+                x,
+                y,
+                gp.kernels.Matern52(input_dim=self._w_dim),
+                noise=torch.tensor(0.1),
+                jitter=1.0e-4,
+            )
+            self._update_posterior()
 
     def _next_x(self, n_candidates: int):
         """"""
@@ -141,6 +170,15 @@ class ScanBayOpt(BaseScanOpt):
         # convert it back to original domain.
         x2 = transform_to(constraint)(unconstrained_x)
         return x2.detach()
+
+    def add_data(self, x_in, y_in):
+        """"""
+
+        x = torch.cat([self._gp_model.X, x_in])
+        y = torch.cat([self._gp_model.y, y_in])
+        self._gp_model.set_data(x, y)
+
+
 
     def _init_w_rndm_data(self, n_start_data: int):
         """"""
@@ -210,18 +248,27 @@ def main():
 
     DIM = 8
     sbo = ScanBayOpt(
-        scan_map_class=smc, weight_dim=DIM, detector=smc.detector, bdummy_values=False
+        scan_map_class=smc,
+        weight_dim=DIM,
+        detector=smc.detector,
+        bdummy_values=False,
+        # weight_range=np.array([0.85, 1.15]),
     )
     result = sbo.optimize(
         n_start_data=(2 * DIM),
-        n_opt_steps=(120 - 2 * DIM),
+        # n_start_data=(2),
+        n_opt_steps=(250 - 2 * DIM),
+        # n_start_data=(1),
+        # n_opt_steps=(10),
         n_candidates=50,
+        # start_x=start_x,
+        # start_y=start_y,
     )
     sbo.plot_history(bsave_fig=True)
     # sbo.plot_history_order(bsave_fig=False)
-    sbo.save_history()
-
+    # sbo.save_history()
     print("Best optimization result: ", result)
+
     best_weights = sbo.construct_weights(result["x_opt"], smc.detector)
     smc.calc_peak_positions(best_weights)
     smc.calc_loss()

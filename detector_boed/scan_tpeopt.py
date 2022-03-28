@@ -70,17 +70,17 @@ def main():
         detector=0,
     )
 
-    stpe = ScanTPEOpt(scan_map_class=smc, weight_dim=2, detector=smc.detector)
-    result = stpe.optimize(n_opt_steps=50)
-    stpe.plot_history(bsave_fig=False)
-    stpe.plot_history_order(bsave_fig=True)
+    stpe = ScanTPEOpt(scan_map_class=smc, weight_dim=4, detector=smc.detector)
+    result = stpe.optimize(n_opt_steps=75)
+    stpe.plot_history(bsave_fig=True)
+    # stpe.plot_history_order(bsave_fig=True)
     # stpe.save_history()
 
     print("Best optimization result: ", result)
-    best_weights = stpe.construct_weights(result["x_opt"], smc.detector)
-    smc.calc_peak_positions(best_weights)
-    smc.calc_loss()
-    smc.plot_scanmap()
+    # best_weights = stpe.construct_weights(result["x_opt"], smc.detector)
+    # smc.calc_peak_positions(best_weights)
+    # smc.calc_loss()
+    # smc.plot_scanmap()
 
 
 if __name__ == "__main__":
