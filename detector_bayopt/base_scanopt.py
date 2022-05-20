@@ -1,6 +1,4 @@
 """"""
-# TODO: Dummy loss vals
-# TODO: do time.time() eval
 
 import warnings
 import numpy as np
@@ -89,7 +87,6 @@ class BaseScanOpt:
     def _get_random_weights(self):
         """"""
 
-        # rng_weights = np.random.rand(4) * (w_range[1] - w_range[0]) + w_range[0]
         a = (self._w_range[1] + self._w_range[0]) * 0.5
         b = (self._w_range[1] - self._w_range[0]) * 0.25
         assert b > 0, f"Lower range bound smaller than upper bound: {self._w_range}"
