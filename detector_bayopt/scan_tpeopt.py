@@ -77,10 +77,10 @@ def main():
     # stpe.save_history()
 
     print("Best optimization result: ", result)
-    # best_weights = stpe.construct_weights(result["x_opt"], smc.detector)
-    # smc.calc_peak_positions(best_weights)
-    # smc.calc_loss()
-    # smc.plot_scanmap()
+    best_weights = stpe.construct_weights(result["x_opt"], smc.detector)
+    smc.calc_peak_positions(best_weights)
+    smc.calc_loss()
+    smc.plot_scanmap()
 
 
 if __name__ == "__main__":
