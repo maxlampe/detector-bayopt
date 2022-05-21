@@ -5,7 +5,7 @@ This repository is complementary material to the publication
 _"Gaussian Processes and Bayesian Optimization for High Precision Experiments"_
 [[Lamparth et al.]](https://arxiv.org/abs/2205.07625).
 
-<img src="images/drift_gpr_det0.png.png" alt="drawing" width="700"/>
+<img src="images/drift_gpr_det0.png" alt="drawing" width="700"/>
 
 The Gaussian process regression for the temperature correction of the detectors is 
 available in the [panter](https://github.com/maxlampe/panter) analysis framework 
